@@ -3,7 +3,7 @@ import sys
 
 import requests
 
-from monkey.updater import DuckDNSUpdater
+from monkey.duck_dns_updater import DuckDnsUpdater
 
 logging.basicConfig(
     level=logging.INFO,
@@ -14,7 +14,7 @@ logging.basicConfig(
 
 def main() -> None:
     try:
-        DuckDNSUpdater().run()
+        DuckDnsUpdater().run()
     except (RuntimeError, ValueError, requests.RequestException) as e:
         logging.error("%s", e)
         sys.exit(1)

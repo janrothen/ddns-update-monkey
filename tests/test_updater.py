@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 import requests
 
-from monkey.updater import DuckDNSUpdater
+from monkey.duck_dns_updater import DuckDnsUpdater
 
 _FAKE_CONFIG = {
     "ip": {"service_url": "https://ipv4.icanhazip.com", "request_timeout": 10},
@@ -18,11 +18,11 @@ _FAKE_SECRETS = {"DUCKDNS_TOKEN": "test-token", "DUCKDNS_DOMAIN": "test-domain"}
 @pytest.fixture
 def updater(tmp_path):
     with (
-        patch("monkey.updater.env", side_effect=_FAKE_SECRETS.__getitem__),
-        patch("monkey.updater.config", return_value=_FAKE_CONFIG),
-        patch("monkey.updater.project_root", return_value=tmp_path),
+        patch("monkey.duck_dns_updater.env", side_effect=_FAKE_SECRETS.__getitem__),
+        patch("monkey.duck_dns_updater.config", return_value=_FAKE_CONFIG),
+        patch("monkey.duck_dns_updater.project_root", return_value=tmp_path),
     ):
-        yield DuckDNSUpdater()
+        yield DuckDnsUpdater()
 
 
 # --- state -------------------------------------------------------------------
