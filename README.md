@@ -1,12 +1,12 @@
 # DDNS Update Monkey
 
-Keeps a [DuckDNS](https://www.duckdns.org) hostname pointed at your home IP address.
-Runs every 5 minutes via cron and only calls the DuckDNS API when the public IP has actually changed.
-Fetches the current IP from `ipv4.icanhazip.com`, compares it to the last known value persisted in `state.json`, and updates DuckDNS if they differ.
-
 ![Python](https://img.shields.io/badge/python-3.13%2B-blue)
 ![Platform](https://img.shields.io/badge/platform-Raspberry%20Pi%20%7C%20Linux-lightgrey.svg)
 ![License](https://img.shields.io/badge/license-MIT-green)
+
+Keeps a [DuckDNS](https://www.duckdns.org) hostname pointed at your home IP address.
+Runs every 5 minutes via cron and only calls the DuckDNS API when the public IP has actually changed.
+Fetches the current IP from `ipv4.icanhazip.com`, compares it to the last known value persisted in `state.json`, and updates DuckDNS if they differ.
 
 ## Requirements
 
