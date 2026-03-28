@@ -53,6 +53,38 @@ request_timeout = 10
 state = "state.json"
 ```
 
+## Architecture
+
+### Runtime sequence
+
+```mermaid
+sequenceDiagram
+    participant cron
+    participant __main__
+    participant DuckDnsUpdater
+    participant icanhazip.com
+    participant state.json
+    participant DuckDNS API
+
+    cron->>__main__: python -m monkey (every 5 min)
+    __main__->>DuckDnsUpdater: DuckDnsUpdater()
+    DuckDnsUpdater->>state.json: read last_ip
+    state.json-->>DuckDnsUpdater: "1.2.3.4" (or empty)
+
+    __main__->>DuckDnsUpdater: run()
+    DuckDnsUpdater->>icanhazip.com: GET /
+    icanhazip.com-->>DuckDnsUpdater: current IP
+
+    alt IP unchanged
+        DuckDnsUpdater-->>__main__: log "no update needed"
+    else IP changed
+        DuckDnsUpdater->>DuckDNS API: GET /update?domains=…&token=…&ip=…
+        DuckDNS API-->>DuckDnsUpdater: "OK"
+        DuckDnsUpdater->>state.json: write new IP (atomic)
+        DuckDnsUpdater-->>__main__: log "updated"
+    end
+```
+
 ## Install & run
 
 ```bash
