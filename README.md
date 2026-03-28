@@ -68,10 +68,10 @@ sequenceDiagram
 
     cron->>__main__: python -m monkey (every 5 min)
     __main__->>DuckDnsUpdater: DuckDnsUpdater()
-    DuckDnsUpdater->>state.json: read last_ip
-    state.json-->>DuckDnsUpdater: "1.2.3.4" (or empty)
 
     __main__->>DuckDnsUpdater: run()
+    DuckDnsUpdater->>state.json: read last_ip
+    state.json-->>DuckDnsUpdater: "1.2.3.4" (or empty)
     DuckDnsUpdater->>icanhazip.com: GET /
     icanhazip.com-->>DuckDnsUpdater: current IP
 
