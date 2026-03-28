@@ -5,6 +5,7 @@ Runs every 5 minutes via cron and only calls the DuckDNS API when the public IP 
 Fetches the current IP from `ipv4.icanhazip.com`, compares it to the last known value persisted in `state.json`, and updates DuckDNS if they differ.
 
 ![Python](https://img.shields.io/badge/python-3.13%2B-blue)
+![Platform](https://img.shields.io/badge/platform-Raspberry%20Pi%20%7C%20Linux-lightgrey.svg)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ## Requirements
@@ -140,6 +141,11 @@ tail -f /var/log/ddnsupdatemonkey-cron.log
 - `.env` is listed in `.gitignore` and must never be committed — it contains your DuckDNS token
 - The token grants full control over your DuckDNS domains; treat it like a password
 
+## Contributing
+
+Found a bug or have an idea? Open an issue or send a PR.
+Run `pytest` before submitting and keep changes focused.
+
 ## License
 
-[MIT](LICENSE)
+MIT © Jan Rothen — see [LICENSE](LICENSE) for details.
