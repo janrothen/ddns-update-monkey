@@ -28,7 +28,7 @@ def updater(tmp_path):
 # --- state -------------------------------------------------------------------
 
 def test_load_state_missing_file(updater):
-    assert updater.last_ip == ""
+    assert updater._load_state() == ""
 
 
 def test_load_state_reads_existing(updater):
@@ -109,7 +109,7 @@ def test_update_duckdns_no_token_in_error(updater):
 # --- run ---------------------------------------------------------------------
 
 def test_run_no_update_when_ip_unchanged(updater):
-    updater.last_ip = "1.2.3.4"
+    updater.state_file.write_text(json.dumps({"last_ip": "1.2.3.4"}))
     mock_resp = MagicMock()
     mock_resp.text = "1.2.3.4\n"
     with patch("requests.get", return_value=mock_resp) as mock_get:

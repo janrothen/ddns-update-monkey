@@ -18,7 +18,6 @@ class DuckDnsUpdater:
         self.token: str = env("DUCKDNS_TOKEN")
         self.domain: str = env("DUCKDNS_DOMAIN")
         self.state_file: Path = project_root() / config()["files"]["state"]
-        self.last_ip: str = self._load_state()
 
     def _load_state(self) -> str:
         if self.state_file.exists():
@@ -72,6 +71,7 @@ class DuckDnsUpdater:
 
     @override
     def run(self) -> None:
+        self.last_ip: str = self._load_state()
         current_ip = self._get_public_ip()
 
         if current_ip == self.last_ip:
