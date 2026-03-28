@@ -8,12 +8,13 @@ from typing import override
 
 import requests
 
-from monkey.config import ConfigDict, config, env, project_root
+from monkey.config import config, env, project_root
+from monkey.dns_updater import DnsUpdater
 
 log = logging.getLogger(__name__)
 
 
-class DuckDnsUpdater:
+class DuckDnsUpdater(DnsUpdater):
     def __init__(self) -> None:
         self.token: str = env("DUCKDNS_TOKEN")
         self.domain: str = env("DUCKDNS_DOMAIN")
@@ -67,7 +68,9 @@ class DuckDnsUpdater:
         except requests.RequestException as e:
             raise requests.RequestException(f"Failed to reach DuckDNS: {e}") from e
         if resp.text.strip() != "OK":
-            raise ValueError(f"DuckDNS returned unexpected response: {resp.text.strip()!r}")
+            raise ValueError(
+                f"DuckDNS returned unexpected response: {resp.text.strip()!r}"
+            )
 
     @override
     def run(self) -> None:

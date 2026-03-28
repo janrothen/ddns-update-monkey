@@ -4,5 +4,4 @@ from typing import Protocol
 
 
 class DnsUpdater(Protocol):
-    def run(self) -> None:
-        ...
+    def run(self) -> None: ...
