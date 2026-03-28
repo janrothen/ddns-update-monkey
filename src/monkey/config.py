@@ -7,8 +7,9 @@ from dotenv import load_dotenv
 
 type ConfigDict = dict[str, Any]
 
-# src/monkey/config.py → project root is two levels up
-_PROJECT_ROOT = Path(__file__).parent.parent.parent
+# Project root is the working directory — the cron job sets this via `cd $HOME`,
+# and manual invocation is expected from the project root.
+_PROJECT_ROOT = Path.cwd()
 
 load_dotenv(_PROJECT_ROOT / ".env")
 
