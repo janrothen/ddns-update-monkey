@@ -1,57 +1,17 @@
 # DDNS Update Monkey
 
-Keeps a [DuckDNS](https://www.duckdns.org) hostname pointed at your home IP.
-Runs periodically and only calls the DuckDNS API when the IP actually changes.
+Keeps a [DuckDNS](https://www.duckdns.org) hostname pointed at your home IP address.
+Runs every 5 minutes via cron and only calls the DuckDNS API when the public IP has actually changed.
+Fetches the current IP from `ipv4.icanhazip.com`, compares it to the last known value persisted in `state.json`, and updates DuckDNS if they differ.
 
-## How it works
-
-1. Fetches your current public IP from `ipv4.icanhazip.com`
-2. Compares it to the last known IP (persisted in `state.json`)
-3. If it changed, calls the DuckDNS update API
-4. Logs every action with a timestamp to stdout
+![Python](https://img.shields.io/badge/python-3.13%2B-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
 
 ## Requirements
 
+- Raspberry Pi (or any Linux host with cron)
 - Python 3.13+
-- A free [DuckDNS](https://www.duckdns.org) account with a domain set up
-
-## Configuration
-
-Configuration is split across two files intentionally:
-
-- **`.env`** — secrets (credentials). Never commit this file.
-- **`config.toml`** — non-secret settings (IP, timeouts, file paths).
-
-### Credentials (`.env`)
-
-Copy `.env.example` to `.env` and fill in your credentials:
-
-```bash
-cp .env.example .env
-```
-
-```dotenv
-DUCKDNS_TOKEN=your-token-here
-DUCKDNS_DOMAIN=your-subdomain
-```
-
-The token is at the top of the DuckDNS dashboard. The domain is just the subdomain part, without `.duckdns.org`.
-
-
-### Settings (`config.toml`)
-
-```toml
-[ip]
-service_url     = "https://ipv4.icanhazip.com"
-request_timeout = 10
-
-[duckdns]
-update_url      = "https://www.duckdns.org/update"
-request_timeout = 10
-
-[files]
-state = "state.json"
-```
+- A free [DuckDNS](https://www.duckdns.org) account with a subdomain set up
 
 ## Architecture
 
@@ -85,6 +45,43 @@ sequenceDiagram
     end
 ```
 
+## Configuration
+
+Configuration is split across two files intentionally:
+
+- **`.env`** — secrets (credentials). Never commit this file.
+- **`config.toml`** — non-secret settings (IP service URL, timeouts, file paths).
+
+### Credentials (`.env`)
+
+Copy `.env.example` to `.env` and fill in your credentials:
+
+```bash
+cp .env.example .env
+```
+
+```dotenv
+DUCKDNS_TOKEN=your-token-here
+DUCKDNS_DOMAIN=your-subdomain
+```
+
+The token is at the top of the DuckDNS dashboard. The domain is just the subdomain part, without `.duckdns.org`.
+
+### Settings (`config.toml`)
+
+```toml
+[ip]
+service_url     = "https://ipv4.icanhazip.com"
+request_timeout = 10
+
+[duckdns]
+update_url      = "https://www.duckdns.org/update"
+request_timeout = 10
+
+[files]
+state = "state.json"
+```
+
 ## Install & run
 
 ```bash
@@ -93,8 +90,15 @@ python3 -m venv .venv
 .venv/bin/python -m monkey
 ```
 
+## Development
 
-## Run as a cron job  (every 5 minutes)
+```bash
+python3 -m venv .venv
+.venv/bin/pip install -e ".[dev]"
+.venv/bin/pytest
+```
+
+## Deployment
 
 Update the `HOME` variable at the top of `etc/cron.d/ddnsupdatemonkey` to match where you cloned the repo, then:
 
@@ -117,14 +121,6 @@ To follow logs:
 tail -f /var/log/ddnsupdatemonkey-cron.log
 ```
 
-## Development & testing
-
-```bash
-python3 -m venv .venv
-.venv/bin/pip install -e ".[dev]"
-.venv/bin/pytest
-```
-
 ## Troubleshooting
 
 | Symptom | Likely cause |
@@ -135,12 +131,15 @@ python3 -m venv .venv
 | `DuckDNS returned unexpected response` | DuckDNS API returned something other than `OK` — check the domain name |
 | `state.json is corrupt` | State file was partially written — it is reset automatically |
 
+## State file
+
+`state.json` persists the IP from the previous run. On first run the file doesn't exist yet, so the IP is treated as unknown and DuckDNS is updated immediately. If the file is deleted, the same bootstrap happens on the next run.
+
 ## Security
 
 - `.env` is listed in `.gitignore` and must never be committed — it contains your DuckDNS token
 - The token grants full control over your DuckDNS domains; treat it like a password
 
+## License
 
-## State file
-
-`state.json` persists the IP from the previous run. On first run the file doesn't exist yet, so the IP is treated as unknown and DuckDNS is updated immediately. If the file is deleted, the same bootstrap happens on the next run.
+[MIT](LICENSE)
