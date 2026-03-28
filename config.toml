@@ -1,0 +1,10 @@
+[ip]
+service_url = "https://ipv4.icanhazip.com"
+request_timeout = 10          # seconds
+
+[duckdns]
+update_url  = "https://www.duckdns.org/update"
+request_timeout = 10          # seconds
+
+[files]
+state = "state.json"
