@@ -64,17 +64,17 @@ python3 -m venv .venv
 
 ## Run as a cron job  (every 5 minutes)
 
-If you cloned the repo somewhere other than `/home/pi/ddns-update-monkey/`, update the `HOME` variable at the top of `etc/cron.d/duckdnsupdater` first. Then:
+If you cloned the repo somewhere other than `/home/pi/ddns-update-monkey/`, update the `HOME` variable at the top of `etc/cron.d/ddnsupdatemonkey` first. Then:
 
 ```bash
 # Install the cron file
-sudo cp etc/cron.d/duckdnsupdater /etc/cron.d/
-sudo chmod 644 /etc/cron.d/duckdnsupdater
-sudo chown root:root /etc/cron.d/duckdnsupdater
+sudo cp etc/cron.d/ddnsupdatemonkey /etc/cron.d/
+sudo chmod 644 /etc/cron.d/ddnsupdatemonkey
+sudo chown root:root /etc/cron.d/ddnsupdatemonkey
 
 # Create the log file (cron runs as user pi)
-sudo touch /var/log/duckdnsupdater-cron.log
-sudo chown pi:pi /var/log/duckdnsupdater-cron.log
+sudo touch /var/log/ddnsupdatemonkey-cron.log
+sudo chown pi:pi /var/log/ddnsupdatemonkey-cron.log
 
 # Verify cron picked it up
 sudo systemctl status cron
@@ -82,7 +82,7 @@ sudo systemctl status cron
 
 To follow logs:
 ```bash
-tail -f /var/log/duckdnsupdater-cron.log
+tail -f /var/log/ddnsupdatemonkey-cron.log
 ```
 
 ## Development & testing

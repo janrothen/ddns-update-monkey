@@ -20,9 +20,10 @@ It runs periodically and only calls the DuckDNS API when the public IP has actua
 ddns-update-monkey/
 ├── src/monkey/
 │   ├── __init__.py
-│   ├── __main__.py       # Entry point: python -m monkey
-│   ├── config.py         # Config/secrets loader
-│   └── updater.py        # DuckDNSUpdater class
+│   ├── __main__.py            # Entry point: python -m monkey
+│   ├── config.py              # Config/secrets loader
+│   ├── updater.py             # DnsUpdater Protocol
+│   └── duck_dns_updater.py    # DuckDnsUpdater (DuckDNS provider)
 ├── tests/
 │   ├── test_config.py
 │   └── test_updater.py
@@ -32,7 +33,7 @@ ddns-update-monkey/
 ├── .env.example          # Safe-to-commit template
 ├── state.json            # Persisted last known IP (auto-created)
 ├── etc/cron.d/
-│   └── duckdnsupdater    # Cron job — copy to /etc/cron.d/ on the Pi
+│   └── ddnsupdatemonkey  # Cron job — copy to /etc/cron.d/ on the Pi
 └── CLAUDE.md             # This file
 ```
 
@@ -63,8 +64,8 @@ python3 -m venv .venv
 ```
 
 ## Cron (every 5 minutes)
-See `etc/cron.d/duckdnsupdater` — copy it to `/etc/cron.d/` on the Pi.
-Logs go to `/var/log/duckdnsupdater-cron.log`.
+See `etc/cron.d/ddnsupdatemonkey` — copy it to `/etc/cron.d/` on the Pi.
+Logs go to `/var/log/ddnsupdatemonkey-cron.log`.
 
 ## Security notes
 
