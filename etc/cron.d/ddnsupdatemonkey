@@ -3,7 +3,7 @@
 # Owner:       root:root, Permissions: 644 (readable by root & cron daemon)
 
 PATH=/usr/sbin:/usr/bin:/sbin:/bin
-HOME=/home/pi/ddns-update-monkey
+HOME=/home/pi/raspberry/ddns-update-monkey
 LOG=/var/log/ddnsupdatemonkey-cron.log
 TZ=Europe/Zurich
 

@@ -64,7 +64,7 @@ python3 -m venv .venv
 
 ## Run as a cron job  (every 5 minutes)
 
-If you cloned the repo somewhere other than `/home/pi/ddns-update-monkey/`, update the `HOME` variable at the top of `etc/cron.d/ddnsupdatemonkey` first. Then:
+Update the `HOME` variable at the top of `etc/cron.d/ddnsupdatemonkey` to match where you cloned the repo, then:
 
 ```bash
 # Install the cron file
