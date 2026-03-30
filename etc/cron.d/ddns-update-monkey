@@ -1,10 +1,10 @@
-# File:        /etc/cron.d/ddnsupdatemonkey
+# File:        /etc/cron.d/ddns-update-monkey
 # Purpose:     Update DuckDNS with the current public IP every 5 minutes
 # Owner:       root:root, Permissions: 644 (readable by root & cron daemon)
 
 PATH=/usr/sbin:/usr/bin:/sbin:/bin
 HOME=/home/pi/raspberry/ddns-update-monkey
-LOG=/var/log/ddnsupdatemonkey-cron.log
+LOG=/var/log/ddns-update-monkey-cron.log
 TZ=Europe/Zurich
 
 # --- DDNS update (every 5 minutes) ----------------------------------------

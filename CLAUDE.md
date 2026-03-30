@@ -33,7 +33,7 @@ ddns-update-monkey/
 ├── .env.example          # Safe-to-commit template
 ├── state.json            # Persisted last known IP (auto-created)
 ├── etc/cron.d/
-│   └── ddnsupdatemonkey  # Cron job — copy to /etc/cron.d/ on the Pi
+│   └── ddns-update-monkey  # Cron job — copy to /etc/cron.d/ on the Pi
 └── CLAUDE.md             # This file
 ```
 
@@ -64,8 +64,8 @@ python3 -m venv .venv
 ```
 
 ## Cron (every 5 minutes)
-See `etc/cron.d/ddnsupdatemonkey` — copy it to `/etc/cron.d/` on the Pi.
-Logs go to `/var/log/ddnsupdatemonkey-cron.log`.
+See `etc/cron.d/ddns-update-monkey` — copy it to `/etc/cron.d/` on the Pi.
+Logs go to `/var/log/ddns-update-monkey-cron.log`.
 
 ## Security notes
 
