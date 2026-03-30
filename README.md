@@ -115,10 +115,6 @@ sudo chown pi:pi /var/log/ddns-update-monkey-cron.log
 
 # Verify cron picked it up
 sudo systemctl status cron
-```
-
-To follow logs:
-```bash
 tail -f /var/log/ddns-update-monkey-cron.log
 ```
 
