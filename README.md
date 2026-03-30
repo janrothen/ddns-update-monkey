@@ -101,22 +101,7 @@ python3 -m venv .venv
 
 ## Deployment
 
-Update the `HOME` variable at the top of `etc/cron.d/ddns-update-monkey` to match where you cloned the repo, then:
-
-```bash
-# Install the cron file
-sudo cp etc/cron.d/ddns-update-monkey /etc/cron.d/
-sudo chmod 644 /etc/cron.d/ddns-update-monkey
-sudo chown root:root /etc/cron.d/ddns-update-monkey
-
-# Create the log file (cron runs as user pi)
-sudo touch /var/log/ddns-update-monkey-cron.log
-sudo chown pi:pi /var/log/ddns-update-monkey-cron.log
-
-# Verify cron picked it up
-sudo systemctl status cron
-tail -f /var/log/ddns-update-monkey-cron.log
-```
+See [etc/cron.d/README.md](etc/cron.d/README.md) for installation steps.
 
 ## Troubleshooting
 
