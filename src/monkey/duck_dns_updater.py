@@ -3,22 +3,29 @@
 import json
 import logging
 import os
+import re
 from pathlib import Path
-from typing import override
 
 import requests
 
 from monkey.config import config, env, project_root
-from monkey.dns_updater import DnsUpdater
 
 log = logging.getLogger(__name__)
 
+_IPV4_RE = re.compile(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$")
 
-class DuckDnsUpdater(DnsUpdater):
+
+class DuckDnsUpdater:
     def __init__(self) -> None:
         self.token: str = env("DUCKDNS_TOKEN")
         self.domain: str = env("DUCKDNS_DOMAIN")
-        self.state_file: Path = project_root() / config()["files"]["state"]
+        cfg = config()
+        self.state_file: Path = project_root() / cfg["files"]["state"]
+        self.ip_service_url: str = cfg["ip"]["service_url"]
+        self.ip_timeout: int = cfg["ip"]["request_timeout"]
+        self.duckdns_update_url: str = cfg["duckdns"]["update_url"]
+        self.duckdns_timeout: int = cfg["duckdns"]["request_timeout"]
+        self.last_ip: str = ""
 
     def _load_state(self) -> str:
         if self.state_file.exists():
@@ -40,12 +47,8 @@ class DuckDnsUpdater(DnsUpdater):
 
     def _get_public_ip(self) -> str:
         try:
-            resp = requests.get(
-                config()["ip"]["service_url"],
-                timeout=config()["ip"]["request_timeout"],
-            )
+            resp = requests.get(self.ip_service_url, timeout=self.ip_timeout)
             resp.raise_for_status()
-            return resp.text.strip()
         except requests.HTTPError as e:
             raise requests.HTTPError(
                 f"IP service returned HTTP {e.response.status_code}"
@@ -53,13 +56,18 @@ class DuckDnsUpdater(DnsUpdater):
         except requests.RequestException as e:
             raise requests.RequestException(f"Failed to reach IP service: {e}") from e
 
+        ip = resp.text.strip()
+        if not _IPV4_RE.match(ip):
+            raise ValueError(f"IP service returned unexpected value: {ip!r}")
+        return ip
+
     def _update_duckdns(self, ip: str) -> None:
         url = (
-            f"{config()['duckdns']['update_url']}"
+            f"{self.duckdns_update_url}"
             f"?domains={self.domain}&token={self.token}&ip={ip}"
         )
         try:
-            resp = requests.get(url, timeout=config()["duckdns"]["request_timeout"])
+            resp = requests.get(url, timeout=self.duckdns_timeout)
             resp.raise_for_status()
         except requests.HTTPError as e:
             raise requests.HTTPError(
@@ -72,9 +80,8 @@ class DuckDnsUpdater(DnsUpdater):
                 f"DuckDNS returned unexpected response: {resp.text.strip()!r}"
             )
 
-    @override
     def run(self) -> None:
-        self.last_ip: str = self._load_state()
+        self.last_ip = self._load_state()
         current_ip = self._get_public_ip()
 
         if current_ip == self.last_ip:
