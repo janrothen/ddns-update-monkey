@@ -4,28 +4,11 @@ from unittest.mock import MagicMock, patch
 import pytest
 import requests
 
-from monkey.duck_dns_updater import DuckDnsUpdater
-
-_FAKE_CONFIG = {
-    "ip": {"service_url": "https://ipv4.icanhazip.com", "request_timeout": 10},
-    "duckdns": {"update_url": "https://www.duckdns.org/update", "request_timeout": 10},
-    "files": {"state": "state.json"},
-}
-
-_FAKE_SECRETS = {"DUCKDNS_TOKEN": "test-token", "DUCKDNS_DOMAIN": "test-domain"}
-
-
-@pytest.fixture
-def updater(tmp_path):
-    with (
-        patch("monkey.duck_dns_updater.env", side_effect=_FAKE_SECRETS.__getitem__),
-        patch("monkey.duck_dns_updater.config", return_value=_FAKE_CONFIG),
-        patch("monkey.duck_dns_updater.project_root", return_value=tmp_path),
-    ):
-        yield DuckDnsUpdater()
+# updater fixture is provided by conftest.py
 
 
 # --- state -------------------------------------------------------------------
+
 
 def test_load_state_missing_file(updater):
     assert updater._load_state() == ""
@@ -56,17 +39,23 @@ def test_save_state_is_atomic(updater):
 
 # --- _get_public_ip ----------------------------------------------------------
 
+
 def test_get_public_ip_success(updater):
-    mock_resp = MagicMock()
-    mock_resp.text = "5.6.7.8\n"
+    mock_resp = MagicMock(text="5.6.7.8\n")
     with patch("requests.get", return_value=mock_resp):
         assert updater._get_public_ip() == "5.6.7.8"
 
 
+def test_get_public_ip_invalid_response(updater):
+    """Non-IP responses from the IP service should raise ValueError."""
+    mock_resp = MagicMock(text="<html>error</html>")
+    with patch("requests.get", return_value=mock_resp):
+        with pytest.raises(ValueError, match="unexpected value"):
+            updater._get_public_ip()
+
+
 def test_get_public_ip_http_error(updater):
-    mock_resp = MagicMock()
-    mock_resp.status_code = 503
-    http_err = requests.HTTPError(response=mock_resp)
+    http_err = requests.HTTPError(response=MagicMock(status_code=503))
     with patch("requests.get", side_effect=http_err):
         with pytest.raises(requests.HTTPError, match="503"):
             updater._get_public_ip()
@@ -80,26 +69,30 @@ def test_get_public_ip_connection_error(updater):
 
 # --- _update_duckdns ---------------------------------------------------------
 
+
 def test_update_duckdns_success(updater):
-    mock_resp = MagicMock()
-    mock_resp.text = "OK"
+    mock_resp = MagicMock(text="OK")
     with patch("requests.get", return_value=mock_resp):
         updater._update_duckdns("1.2.3.4")  # should not raise
 
 
 def test_update_duckdns_unexpected_response(updater):
-    mock_resp = MagicMock()
-    mock_resp.text = "KO"
+    mock_resp = MagicMock(text="KO")
     with patch("requests.get", return_value=mock_resp):
         with pytest.raises(ValueError, match="unexpected response"):
             updater._update_duckdns("1.2.3.4")
 
 
+def test_update_duckdns_http_error(updater):
+    http_err = requests.HTTPError(response=MagicMock(status_code=403))
+    with patch("requests.get", side_effect=http_err):
+        with pytest.raises(requests.HTTPError, match="403"):
+            updater._update_duckdns("1.2.3.4")
+
+
 def test_update_duckdns_no_token_in_error(updater):
     """HTTP errors must not leak the token into the message."""
-    mock_resp = MagicMock()
-    mock_resp.status_code = 403
-    http_err = requests.HTTPError(response=mock_resp)
+    http_err = requests.HTTPError(response=MagicMock(status_code=403))
     with patch("requests.get", side_effect=http_err):
         with pytest.raises(requests.HTTPError) as exc_info:
             updater._update_duckdns("1.2.3.4")
@@ -108,10 +101,10 @@ def test_update_duckdns_no_token_in_error(updater):
 
 # --- run ---------------------------------------------------------------------
 
+
 def test_run_no_update_when_ip_unchanged(updater):
     updater.state_file.write_text(json.dumps({"last_ip": "1.2.3.4"}))
-    mock_resp = MagicMock()
-    mock_resp.text = "1.2.3.4\n"
+    mock_resp = MagicMock(text="1.2.3.4\n")
     with patch("requests.get", return_value=mock_resp) as mock_get:
         updater.run()
     mock_get.assert_called_once()  # only the IP lookup, no DuckDNS call
