@@ -22,9 +22,10 @@ ddns-update-monkey/
 │   ├── __init__.py
 │   ├── __main__.py            # Entry point: python -m monkey
 │   ├── config.py              # Config/secrets loader
-│   ├── updater.py             # DnsUpdater Protocol
+│   ├── dns_updater.py         # DnsUpdater Protocol
 │   └── duck_dns_updater.py    # DuckDnsUpdater (DuckDNS provider)
 ├── tests/
+│   ├── conftest.py
 │   ├── test_config.py
 │   └── test_updater.py
 ├── config.toml           # Non-secret tunables (URLs, timeouts, file paths)
