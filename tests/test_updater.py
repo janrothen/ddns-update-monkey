@@ -4,7 +4,17 @@ from unittest.mock import MagicMock, patch
 import pytest
 import requests
 
+from monkey.dns_updater import DnsUpdater
+
 # updater fixture is provided by conftest.py
+
+
+# --- DnsUpdater protocol ------------------------------------------------------
+
+
+def test_dns_updater_protocol_run_is_noop():
+    """Protocol stub body (Ellipsis) returns None when called directly."""
+    assert DnsUpdater.run(object()) is None  # type: ignore[arg-type]
 
 
 # --- state -------------------------------------------------------------------
