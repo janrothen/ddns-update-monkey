@@ -27,15 +27,20 @@ ddns-update-monkey/
 ├── tests/
 │   ├── conftest.py
 │   ├── test_config.py
+│   ├── test_main.py
 │   └── test_updater.py
-├── config.toml           # Non-secret tunables (URLs, timeouts, file paths)
-├── pyproject.toml        # Python project metadata and dependencies
-├── .env                  # Token + domain (never commit this)
-├── .env.example          # Safe-to-commit template
-├── state.json            # Persisted last known IP (auto-created)
-├── etc/cron.d/
-│   └── ddns-update-monkey  # Cron job — copy to /etc/cron.d/ on the Pi
-└── CLAUDE.md             # This file
+├── .github/workflows/
+│   └── sonarcloud.yml        # SonarCloud static analysis CI workflow
+├── deploy/cron/
+│   ├── ddns-update-monkey    # Cron job — copy to /etc/cron.d/ on the Pi
+│   └── README.md             # Installation instructions
+├── config.toml               # Non-secret tunables (URLs, timeouts, file paths)
+├── pyproject.toml            # Python project metadata and dependencies
+├── sonar-project.properties  # SonarCloud project configuration
+├── .env                      # Token + domain (never commit this)
+├── .env.example              # Safe-to-commit template
+├── state.json                # Persisted last known IP (auto-created)
+└── CLAUDE.md                 # This file
 ```
 
 ## Configuration
@@ -65,7 +70,7 @@ python3 -m venv .venv
 ```
 
 ## Cron (every 5 minutes)
-See `etc/cron.d/ddns-update-monkey` — copy it to `/etc/cron.d/` on the Pi.
+See `deploy/cron/ddns-update-monkey` — copy it to `/etc/cron.d/` on the Pi.
 Logs go to `/var/log/ddns-update-monkey-cron.log`.
 
 ## Security notes

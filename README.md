@@ -105,7 +105,7 @@ python3 -m venv .venv
 
 ## Deployment
 
-See [etc/cron.d/README.md](etc/cron.d/README.md) for installation steps.
+See [deploy/cron/README.md](deploy/cron/README.md) for installation steps.
 
 ## Troubleshooting
 
