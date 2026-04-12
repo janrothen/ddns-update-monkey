@@ -7,6 +7,7 @@
 [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=janrothen_ddns-update-monkey&metric=bugs)](https://sonarcloud.io/project/overview?id=janrothen_ddns-update-monkey)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=janrothen_ddns-update-monkey&metric=coverage)](https://sonarcloud.io/project/overview?id=janrothen_ddns-update-monkey)
 [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=janrothen_ddns-update-monkey&metric=security_rating)](https://sonarcloud.io/project/overview?id=janrothen_ddns-update-monkey)
+[![GitGuardian](https://img.shields.io/badge/GitGuardian-monitored-blue?logo=gitguardian&logoColor=white)](https://www.gitguardian.com)
 
 Keeps a [DuckDNS](https://www.duckdns.org) hostname pointed at your home IP address.
 Runs every 5 minutes via cron and only calls the DuckDNS API when the public IP has actually changed.
