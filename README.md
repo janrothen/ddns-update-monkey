@@ -116,7 +116,8 @@ python3 -m venv .venv
 
 ## Deployment
 
-See [deploy/cron/README.md](deploy/cron/README.md) for installation steps.
+- [deploy/cron/README.md](deploy/cron/README.md) — cron drop-in that runs the updater every 5 minutes
+- [deploy/logrotate.d/README.md](deploy/logrotate.d/README.md) — logrotate drop-in that keeps the cron log bounded
 
 ## Troubleshooting
 
