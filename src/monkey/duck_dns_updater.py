@@ -1,100 +1,34 @@
-"""DuckDNS provider — fetches current public IP and updates DuckDNS if it changed."""
+"""Orchestrates a DuckDNS update: resolve IP, compare to stored IP, update if changed."""
 
-import ipaddress
-import json
 import logging
-import os
-from pathlib import Path
 
-import requests
-
-from monkey.config import config, env, project_root
+from monkey.duck_dns_client import DuckDnsClient
+from monkey.ip_resolver import IpResolver
+from monkey.state_store import StateStore
 
 log = logging.getLogger(__name__)
 
 
 class DuckDnsUpdater:
-    def __init__(self) -> None:
-        self.token: str = env("DUCKDNS_TOKEN")
-        self.domain: str = env("DUCKDNS_DOMAIN")
-        cfg = config()
-        self.state_file: Path = project_root() / cfg["files"]["state"]
-        self.ip_service_url: str = cfg["ip"]["service_url"]
-        self.ip_timeout: int = cfg["ip"]["request_timeout"]
-        self.duckdns_update_url: str = cfg["duckdns"]["update_url"]
-        self.duckdns_timeout: int = cfg["duckdns"]["request_timeout"]
-        self.last_ip: str = ""
-
-    def _load_state(self) -> str:
-        if self.state_file.exists():
-            try:
-                return json.loads(self.state_file.read_text()).get("last_ip", "")
-            except json.JSONDecodeError:
-                log.warning("state.json is corrupt — treating as empty")
-                return ""
-        return ""
-
-    def _save_state(self) -> None:
-        state = {"last_ip": self.last_ip}
-        # Write to a temp file first, then atomically replace the real state file.
-        # os.replace() is POSIX-atomic: the old file is never left partially overwritten,
-        # so a crash or disk-full error between post and save can't corrupt state.json.
-        tmp = self.state_file.with_suffix(".tmp")
-        tmp.write_text(json.dumps(state))
-        os.replace(tmp, self.state_file)
-
-    def _get_public_ip(self) -> str:
-        try:
-            resp = requests.get(self.ip_service_url, timeout=self.ip_timeout)
-            resp.raise_for_status()
-        except requests.HTTPError as e:
-            raise requests.HTTPError(
-                f"IP service returned HTTP {e.response.status_code}"
-            ) from e
-        except requests.RequestException as e:
-            raise requests.RequestException(f"Failed to reach IP service: {e}") from e
-
-        ip = resp.text.strip()
-        try:
-            ipaddress.IPv4Address(ip)
-        except ipaddress.AddressValueError as e:
-            raise ValueError(f"IP service returned unexpected value: {ip!r}") from e
-        return ip
-
-    def _update_duckdns(self, ip: str) -> None:
-        # Pass secrets via params, never string-formatted into the URL.
-        # This keeps the token out of `requests` exception messages, which
-        # otherwise include the full request URL (and thus the token).
-        params = {"domains": self.domain, "token": self.token, "ip": ip}
-        try:
-            resp = requests.get(
-                self.duckdns_update_url,
-                params=params,
-                timeout=self.duckdns_timeout,
-            )
-            resp.raise_for_status()
-        except requests.HTTPError as e:
-            raise requests.HTTPError(
-                f"DuckDNS returned HTTP {e.response.status_code}"
-            ) from e
-        except requests.RequestException as e:
-            # Do not interpolate `e` — it may embed the request URL + token.
-            raise requests.RequestException("Failed to reach DuckDNS") from e
-        if resp.text.strip() != "OK":
-            raise ValueError(
-                f"DuckDNS returned unexpected response: {resp.text.strip()!r}"
-            )
+    def __init__(
+        self,
+        ip_resolver: IpResolver,
+        state_store: StateStore,
+        client: DuckDnsClient,
+    ) -> None:
+        self.ip_resolver = ip_resolver
+        self.state_store = state_store
+        self.client = client
 
     def run(self) -> None:
-        self.last_ip = self._load_state()
-        current_ip = self._get_public_ip()
+        last_ip = self.state_store.load()
+        current_ip = self.ip_resolver.get()
 
-        if current_ip == self.last_ip:
+        if current_ip == last_ip:
             log.info("IP unchanged (%s) — no update needed", current_ip)
             return
 
-        log.info("IP changed: %s → %s", self.last_ip or "<none>", current_ip)
-        self._update_duckdns(current_ip)
-        self.last_ip = current_ip
-        self._save_state()  # only persisted after a successful update
-        log.info("DuckDNS updated: %s → %s", self.domain, current_ip)
+        log.info("IP changed: %s → %s", last_ip or "<none>", current_ip)
+        self.client.update(current_ip)
+        self.state_store.save(current_ip)  # only persisted after a successful update
+        log.info("DuckDNS updated: %s → %s", self.client.domain, current_ip)

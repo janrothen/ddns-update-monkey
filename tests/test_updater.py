@@ -1,15 +1,27 @@
-import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
-import requests
 
 from monkey.dns_updater import DnsUpdater
+from monkey.duck_dns_updater import DuckDnsUpdater
 
-# updater fixture is provided by conftest.py
+
+def _build(current_ip: str, last_ip: str = ""):
+    ip_resolver = MagicMock()
+    ip_resolver.get.return_value = current_ip
+    state_store = MagicMock()
+    state_store.load.return_value = last_ip
+    client = MagicMock()
+    client.domain = "test-domain"
+    return (
+        DuckDnsUpdater(ip_resolver, state_store, client),
+        ip_resolver,
+        state_store,
+        client,
+    )
 
 
-# --- DnsUpdater protocol ------------------------------------------------------
+# --- DnsUpdater protocol -----------------------------------------------------
 
 
 def test_dns_updater_protocol_run_is_noop():
@@ -17,178 +29,33 @@ def test_dns_updater_protocol_run_is_noop():
     assert DnsUpdater.run(object()) is None  # type: ignore[arg-type]
 
 
-# --- state -------------------------------------------------------------------
+# --- orchestration -----------------------------------------------------------
 
 
-def test_load_state_missing_file(updater):
-    assert updater._load_state() == ""
+def test_run_no_update_when_ip_unchanged():
+    updater, _, state_store, client = _build(current_ip="1.2.3.4", last_ip="1.2.3.4")
+    updater.run()
+    client.update.assert_not_called()
+    state_store.save.assert_not_called()
 
 
-def test_load_state_reads_existing(updater):
-    updater.state_file.write_text(json.dumps({"last_ip": "1.2.3.4"}))
-    assert updater._load_state() == "1.2.3.4"
+def test_run_updates_and_saves_when_ip_changed():
+    updater, _, state_store, client = _build(current_ip="9.9.9.9", last_ip="1.2.3.4")
+    updater.run()
+    client.update.assert_called_once_with("9.9.9.9")
+    state_store.save.assert_called_once_with("9.9.9.9")
 
 
-def test_load_state_corrupt_json(updater):
-    updater.state_file.write_text("not json{{{")
-    assert updater._load_state() == ""
+def test_run_updates_when_no_previous_state():
+    updater, _, state_store, client = _build(current_ip="9.9.9.9", last_ip="")
+    updater.run()
+    client.update.assert_called_once_with("9.9.9.9")
+    state_store.save.assert_called_once_with("9.9.9.9")
 
 
-def test_save_state_writes_correctly(updater):
-    updater.last_ip = "1.2.3.4"
-    updater._save_state()
-    assert json.loads(updater.state_file.read_text()) == {"last_ip": "1.2.3.4"}
-
-
-def test_save_state_is_atomic(updater):
-    """Temp file must not linger after a successful save."""
-    updater.last_ip = "1.2.3.4"
-    updater._save_state()
-    assert not updater.state_file.with_suffix(".tmp").exists()
-
-
-# --- _get_public_ip ----------------------------------------------------------
-
-
-def test_get_public_ip_success(updater):
-    mock_resp = MagicMock(text="5.6.7.8\n")
-    with patch("requests.get", return_value=mock_resp):
-        assert updater._get_public_ip() == "5.6.7.8"
-
-
-def test_get_public_ip_invalid_response(updater):
-    """Non-IP responses from the IP service should raise ValueError."""
-    mock_resp = MagicMock(text="<html>error</html>")
-    with (
-        patch("requests.get", return_value=mock_resp),
-        pytest.raises(ValueError, match="unexpected value"),
-    ):
-        updater._get_public_ip()
-
-
-def test_get_public_ip_rejects_out_of_range_octets(updater):
-    """Octet values above 255 must be rejected (regex-based validation used to accept these)."""
-    mock_resp = MagicMock(text="999.999.999.999\n")
-    with (
-        patch("requests.get", return_value=mock_resp),
-        pytest.raises(ValueError, match="unexpected value"),
-    ):
-        updater._get_public_ip()
-
-
-def test_get_public_ip_http_error(updater):
-    http_err = requests.HTTPError(response=MagicMock(status_code=503))
-    with (
-        patch("requests.get", side_effect=http_err),
-        pytest.raises(requests.HTTPError, match="503"),
-    ):
-        updater._get_public_ip()
-
-
-def test_get_public_ip_connection_error(updater):
-    with (
-        patch("requests.get", side_effect=requests.ConnectionError("timeout")),
-        pytest.raises(requests.RequestException, match="IP service"),
-    ):
-        updater._get_public_ip()
-
-
-# --- _update_duckdns ---------------------------------------------------------
-
-
-def test_update_duckdns_success(updater):
-    mock_resp = MagicMock(text="OK")
-    with patch("requests.get", return_value=mock_resp):
-        updater._update_duckdns("1.2.3.4")  # should not raise
-
-
-def test_update_duckdns_unexpected_response(updater):
-    mock_resp = MagicMock(text="KO")
-    with (
-        patch("requests.get", return_value=mock_resp),
-        pytest.raises(ValueError, match="unexpected response"),
-    ):
-        updater._update_duckdns("1.2.3.4")
-
-
-def test_update_duckdns_http_error(updater):
-    http_err = requests.HTTPError(response=MagicMock(status_code=403))
-    with (
-        patch("requests.get", side_effect=http_err),
-        pytest.raises(requests.HTTPError, match="403"),
-    ):
-        updater._update_duckdns("1.2.3.4")
-
-
-def test_update_duckdns_no_token_in_error(updater):
-    """HTTP errors must not leak the token into the message."""
-    http_err = requests.HTTPError(response=MagicMock(status_code=403))
-    with (
-        patch("requests.get", side_effect=http_err),
-        pytest.raises(requests.HTTPError) as exc_info,
-    ):
-        updater._update_duckdns("1.2.3.4")
-    assert "test-token" not in str(exc_info.value)
-
-
-def test_update_duckdns_no_token_in_connection_error(updater):
-    """Connection errors carry the request URL — token must not bleed through."""
-    conn_err = requests.ConnectionError(
-        "HTTPSConnectionPool(host='www.duckdns.org', port=443): "
-        "Max retries exceeded with url: /update?domains=test-domain"
-        "&token=test-token&ip=1.2.3.4"
-    )
-    with (
-        patch("requests.get", side_effect=conn_err),
-        pytest.raises(requests.RequestException) as exc_info,
-    ):
-        updater._update_duckdns("1.2.3.4")
-    assert "test-token" not in str(exc_info.value)
-
-
-def test_update_duckdns_passes_secrets_via_params(updater):
-    """Secrets must be passed via `params=`, not embedded in the URL string."""
-    mock_resp = MagicMock(text="OK")
-    with patch("requests.get", return_value=mock_resp) as mock_get:
-        updater._update_duckdns("1.2.3.4")
-    args, kwargs = mock_get.call_args
-    assert args == (updater.duckdns_update_url,)
-    assert kwargs["params"] == {
-        "domains": "test-domain",
-        "token": "test-token",
-        "ip": "1.2.3.4",
-    }
-    assert "test-token" not in args[0]
-
-
-# --- run ---------------------------------------------------------------------
-
-
-def test_run_no_update_when_ip_unchanged(updater):
-    updater.state_file.write_text(json.dumps({"last_ip": "1.2.3.4"}))
-    mock_resp = MagicMock(text="1.2.3.4\n")
-    with patch("requests.get", return_value=mock_resp) as mock_get:
+def test_run_does_not_save_state_on_failed_update():
+    updater, _, state_store, client = _build(current_ip="9.9.9.9", last_ip="1.2.3.4")
+    client.update.side_effect = ValueError("boom")
+    with pytest.raises(ValueError):
         updater.run()
-    mock_get.assert_called_once()  # only the IP lookup, no DuckDNS call
-
-
-def test_run_updates_and_saves_when_ip_changed(updater):
-    updater.last_ip = "1.2.3.4"
-    ip_resp = MagicMock(text="9.9.9.9\n")
-    dns_resp = MagicMock(text="OK")
-    with patch("requests.get", side_effect=[ip_resp, dns_resp]):
-        updater.run()
-    assert updater.last_ip == "9.9.9.9"
-    assert json.loads(updater.state_file.read_text())["last_ip"] == "9.9.9.9"
-
-
-def test_run_does_not_save_state_on_failed_update(updater):
-    updater.last_ip = "1.2.3.4"
-    ip_resp = MagicMock(text="9.9.9.9\n")
-    dns_resp = MagicMock(text="KO")
-    with (
-        patch("requests.get", side_effect=[ip_resp, dns_resp]),
-        pytest.raises(ValueError),
-    ):
-        updater.run()
-    assert not updater.state_file.exists()
+    state_store.save.assert_not_called()
