@@ -40,6 +40,9 @@ ddns-update-monkey/
 ├── deploy/cron/
 │   ├── ddns-update-monkey    # Cron job — copy to /etc/cron.d/ on the Pi
 │   └── README.md             # Installation instructions
+├── deploy/logrotate.d/
+│   ├── ddns-update-monkey    # Logrotate config — copy to /etc/logrotate.d/ on the Pi
+│   └── README.md             # Installation instructions
 ├── config.toml               # Non-secret tunables (URLs, timeouts, file paths)
 ├── pyproject.toml            # Python project metadata and dependencies
 ├── sonar-project.properties  # SonarCloud project configuration
