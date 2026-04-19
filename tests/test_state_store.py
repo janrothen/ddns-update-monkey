@@ -1,5 +1,7 @@
 import json
 
+import pytest
+
 
 def test_load_missing_file(state_store):
     assert state_store.load() == ""
@@ -23,4 +25,14 @@ def test_save_writes_correctly(state_store):
 def test_save_is_atomic(state_store):
     """Temp file must not linger after a successful save."""
     state_store.save("1.2.3.4")
+    assert not state_store.path.with_suffix(".tmp").exists()
+
+
+def test_save_cleans_up_tmp_on_failure(state_store, monkeypatch):
+    def boom(*_args, **_kwargs):
+        raise OSError("disk full")
+
+    monkeypatch.setattr("monkey.state_store.os.replace", boom)
+    with pytest.raises(OSError):
+        state_store.save("1.2.3.4")
     assert not state_store.path.with_suffix(".tmp").exists()
