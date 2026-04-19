@@ -28,25 +28,35 @@ sequenceDiagram
     participant cron
     participant __main__
     participant DuckDnsUpdater
-    participant icanhazip.com
+    participant StateStore
+    participant IpResolver
+    participant DuckDnsClient
     participant state.json
+    participant icanhazip.com
     participant DuckDNS API
 
     cron->>__main__: python -m monkey (every 5 min)
-    __main__->>DuckDnsUpdater: DuckDnsUpdater()
+    __main__->>DuckDnsUpdater: build_updater() — wire collaborators
 
     __main__->>DuckDnsUpdater: run()
-    DuckDnsUpdater->>state.json: read last_ip
-    state.json-->>DuckDnsUpdater: "1.2.3.4" (or empty)
-    DuckDnsUpdater->>icanhazip.com: GET /
-    icanhazip.com-->>DuckDnsUpdater: current IP
+    DuckDnsUpdater->>StateStore: load()
+    StateStore->>state.json: read
+    state.json-->>StateStore: "1.2.3.4" (or empty)
+    StateStore-->>DuckDnsUpdater: last_ip
+    DuckDnsUpdater->>IpResolver: get()
+    IpResolver->>icanhazip.com: GET /
+    icanhazip.com-->>IpResolver: current IP
+    IpResolver-->>DuckDnsUpdater: current_ip
 
     alt IP unchanged
         DuckDnsUpdater-->>__main__: log "no update needed"
     else IP changed
-        DuckDnsUpdater->>DuckDNS API: GET /update?domains=…&token=…&ip=…
-        DuckDNS API-->>DuckDnsUpdater: "OK"
-        DuckDnsUpdater->>state.json: write new IP (atomic)
+        DuckDnsUpdater->>DuckDnsClient: update(current_ip)
+        DuckDnsClient->>DuckDNS API: GET /update?domains=…&token=…&ip=…
+        DuckDNS API-->>DuckDnsClient: "OK"
+        DuckDnsClient-->>DuckDnsUpdater: (returns)
+        DuckDnsUpdater->>StateStore: save(current_ip)
+        StateStore->>state.json: write (atomic)
         DuckDnsUpdater-->>__main__: log "updated"
     end
 ```

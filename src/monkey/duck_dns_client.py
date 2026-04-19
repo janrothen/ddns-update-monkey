@@ -1,6 +1,6 @@
 """Thin HTTP client for the DuckDNS update endpoint."""
 
-import requests
+from monkey import _http
 
 
 class DuckDnsClient:
@@ -17,20 +17,10 @@ class DuckDnsClient:
         self.timeout = timeout
 
     def update(self, ip: str) -> None:
-        # Pass secrets via params, never string-formatted into the URL.
-        # This keeps the token out of `requests` exception messages, which
-        # otherwise include the full request URL (and thus the token).
+        # Secrets go via `params=`, never into the URL string, so they don't
+        # surface in `requests` exception messages or server access logs.
         params = {"domains": self.domain, "token": self.token, "ip": ip}
-        try:
-            resp = requests.get(self.update_url, params=params, timeout=self.timeout)
-            resp.raise_for_status()
-        except requests.HTTPError as e:
-            raise requests.HTTPError(
-                f"DuckDNS returned HTTP {e.response.status_code}"
-            ) from e
-        except requests.RequestException as e:
-            # Do not interpolate `e` — it may embed the request URL + token.
-            raise requests.RequestException("Failed to reach DuckDNS") from e
+        resp = _http.get(self.update_url, "DuckDNS", self.timeout, params=params)
         if resp.text.strip() != "OK":
             raise ValueError(
                 f"DuckDNS returned unexpected response: {resp.text.strip()!r}"

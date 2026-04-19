@@ -2,7 +2,6 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from monkey.dns_updater import DnsUpdater
 from monkey.duck_dns_updater import DuckDnsUpdater
 
 
@@ -19,17 +18,6 @@ def _build(current_ip: str, last_ip: str = ""):
         state_store,
         client,
     )
-
-
-# --- DnsUpdater protocol -----------------------------------------------------
-
-
-def test_dns_updater_protocol_run_is_noop():
-    """Protocol stub body (Ellipsis) returns None when called directly."""
-    assert DnsUpdater.run(object()) is None  # type: ignore[arg-type]
-
-
-# --- orchestration -----------------------------------------------------------
 
 
 def test_run_no_update_when_ip_unchanged():
