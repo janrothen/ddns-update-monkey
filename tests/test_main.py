@@ -1,16 +1,20 @@
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 import requests
 
 from monkey.__main__ import build_updater, main
+from monkey.config import Config
 from monkey.duck_dns_updater import DuckDnsUpdater
 
-FAKE_CONFIG = {
-    "ip": {"service_url": "https://ipv4.icanhazip.com", "request_timeout": 10},
-    "duckdns": {"update_url": "https://www.duckdns.org/update", "request_timeout": 10},
-    "files": {"state": "state.json"},
-}
+FAKE_CONFIG = Config(
+    ip_service_url="https://ipv4.icanhazip.com",
+    ip_request_timeout=10,
+    duckdns_update_url="https://www.duckdns.org/update",
+    duckdns_request_timeout=10,
+    state_file=Path("/tmp/state.json"),
+)
 FAKE_SECRETS = {"DUCKDNS_TOKEN": "t", "DUCKDNS_DOMAIN": "d"}
 
 
@@ -42,15 +46,14 @@ def test_main_exits_on_known_failures(exc):
     assert exc_info.value.code == 1
 
 
-def test_build_updater_wires_collaborators(tmp_path):
+def test_build_updater_wires_collaborators():
     with (
-        patch("monkey.__main__.config", return_value=FAKE_CONFIG),
+        patch("monkey.__main__.load_config", return_value=FAKE_CONFIG),
         patch("monkey.__main__.env", side_effect=FAKE_SECRETS.__getitem__),
-        patch("monkey.__main__.project_root", return_value=tmp_path),
     ):
         updater = build_updater()
     assert isinstance(updater, DuckDnsUpdater)
     assert updater.client.domain == "d"
     assert updater.client.token == "t"
-    assert updater.state_store.path == tmp_path / "state.json"
-    assert updater.ip_resolver.service_url == "https://ipv4.icanhazip.com"
+    assert updater.state_store.path == FAKE_CONFIG.state_file
+    assert updater.ip_resolver.service_url == FAKE_CONFIG.ip_service_url

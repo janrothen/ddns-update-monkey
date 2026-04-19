@@ -21,8 +21,8 @@ ddns-update-monkey/
 ├── src/monkey/
 │   ├── __init__.py
 │   ├── __main__.py            # Entry point: python -m monkey (composes collaborators)
-│   ├── config.py              # Config/secrets loader
-│   ├── dns_updater.py         # DnsUpdater Protocol
+│   ├── _http.py               # Internal HTTP helper with uniform error wrapping
+│   ├── config.py              # Config dataclass + lazy load_config()/env()
 │   ├── ip_resolver.py         # IpResolver — fetches the current public IP
 │   ├── state_store.py         # StateStore — persists the last known IP atomically
 │   ├── duck_dns_client.py     # DuckDnsClient — thin DuckDNS HTTP client

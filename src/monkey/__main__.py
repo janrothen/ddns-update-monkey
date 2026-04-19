@@ -3,7 +3,7 @@ import sys
 
 import requests
 
-from monkey.config import config, env, project_root
+from monkey.config import env, load_config
 from monkey.duck_dns_client import DuckDnsClient
 from monkey.duck_dns_updater import DuckDnsUpdater
 from monkey.ip_resolver import IpResolver
@@ -17,17 +17,17 @@ logging.basicConfig(
 
 
 def build_updater() -> DuckDnsUpdater:
-    cfg = config()
+    cfg = load_config()
     ip_resolver = IpResolver(
-        service_url=cfg["ip"]["service_url"],
-        timeout=cfg["ip"]["request_timeout"],
+        service_url=cfg.ip_service_url,
+        timeout=cfg.ip_request_timeout,
     )
-    state_store = StateStore(path=project_root() / cfg["files"]["state"])
+    state_store = StateStore(path=cfg.state_file)
     client = DuckDnsClient(
-        update_url=cfg["duckdns"]["update_url"],
+        update_url=cfg.duckdns_update_url,
         domain=env("DUCKDNS_DOMAIN"),
         token=env("DUCKDNS_TOKEN"),
-        timeout=cfg["duckdns"]["request_timeout"],
+        timeout=cfg.duckdns_request_timeout,
     )
     return DuckDnsUpdater(ip_resolver, state_store, client)
 

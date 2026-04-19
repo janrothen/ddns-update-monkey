@@ -2,7 +2,7 @@
 
 import ipaddress
 
-import requests
+from monkey import _http
 
 
 class IpResolver:
@@ -11,16 +11,7 @@ class IpResolver:
         self.timeout = timeout
 
     def get(self) -> str:
-        try:
-            resp = requests.get(self.service_url, timeout=self.timeout)
-            resp.raise_for_status()
-        except requests.HTTPError as e:
-            raise requests.HTTPError(
-                f"IP service returned HTTP {e.response.status_code}"
-            ) from e
-        except requests.RequestException as e:
-            raise requests.RequestException(f"Failed to reach IP service: {e}") from e
-
+        resp = _http.get(self.service_url, "IP service", self.timeout)
         ip = resp.text.strip()
         try:
             ipaddress.IPv4Address(ip)
