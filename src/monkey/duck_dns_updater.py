@@ -1,9 +1,9 @@
 """DuckDNS provider — fetches current public IP and updates DuckDNS if it changed."""
 
+import ipaddress
 import json
 import logging
 import os
-import re
 from pathlib import Path
 
 import requests
@@ -11,8 +11,6 @@ import requests
 from monkey.config import config, env, project_root
 
 log = logging.getLogger(__name__)
-
-_IPV4_RE = re.compile(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$")
 
 
 class DuckDnsUpdater:
@@ -57,24 +55,31 @@ class DuckDnsUpdater:
             raise requests.RequestException(f"Failed to reach IP service: {e}") from e
 
         ip = resp.text.strip()
-        if not _IPV4_RE.match(ip):
-            raise ValueError(f"IP service returned unexpected value: {ip!r}")
+        try:
+            ipaddress.IPv4Address(ip)
+        except ipaddress.AddressValueError as e:
+            raise ValueError(f"IP service returned unexpected value: {ip!r}") from e
         return ip
 
     def _update_duckdns(self, ip: str) -> None:
-        url = (
-            f"{self.duckdns_update_url}"
-            f"?domains={self.domain}&token={self.token}&ip={ip}"
-        )
+        # Pass secrets via params, never string-formatted into the URL.
+        # This keeps the token out of `requests` exception messages, which
+        # otherwise include the full request URL (and thus the token).
+        params = {"domains": self.domain, "token": self.token, "ip": ip}
         try:
-            resp = requests.get(url, timeout=self.duckdns_timeout)
+            resp = requests.get(
+                self.duckdns_update_url,
+                params=params,
+                timeout=self.duckdns_timeout,
+            )
             resp.raise_for_status()
         except requests.HTTPError as e:
             raise requests.HTTPError(
                 f"DuckDNS returned HTTP {e.response.status_code}"
             ) from e
         except requests.RequestException as e:
-            raise requests.RequestException(f"Failed to reach DuckDNS: {e}") from e
+            # Do not interpolate `e` — it may embed the request URL + token.
+            raise requests.RequestException("Failed to reach DuckDNS") from e
         if resp.text.strip() != "OK":
             raise ValueError(
                 f"DuckDNS returned unexpected response: {resp.text.strip()!r}"

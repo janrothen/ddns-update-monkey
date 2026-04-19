@@ -59,22 +59,38 @@ def test_get_public_ip_success(updater):
 def test_get_public_ip_invalid_response(updater):
     """Non-IP responses from the IP service should raise ValueError."""
     mock_resp = MagicMock(text="<html>error</html>")
-    with patch("requests.get", return_value=mock_resp):
-        with pytest.raises(ValueError, match="unexpected value"):
-            updater._get_public_ip()
+    with (
+        patch("requests.get", return_value=mock_resp),
+        pytest.raises(ValueError, match="unexpected value"),
+    ):
+        updater._get_public_ip()
+
+
+def test_get_public_ip_rejects_out_of_range_octets(updater):
+    """Octet values above 255 must be rejected (regex-based validation used to accept these)."""
+    mock_resp = MagicMock(text="999.999.999.999\n")
+    with (
+        patch("requests.get", return_value=mock_resp),
+        pytest.raises(ValueError, match="unexpected value"),
+    ):
+        updater._get_public_ip()
 
 
 def test_get_public_ip_http_error(updater):
     http_err = requests.HTTPError(response=MagicMock(status_code=503))
-    with patch("requests.get", side_effect=http_err):
-        with pytest.raises(requests.HTTPError, match="503"):
-            updater._get_public_ip()
+    with (
+        patch("requests.get", side_effect=http_err),
+        pytest.raises(requests.HTTPError, match="503"),
+    ):
+        updater._get_public_ip()
 
 
 def test_get_public_ip_connection_error(updater):
-    with patch("requests.get", side_effect=requests.ConnectionError("timeout")):
-        with pytest.raises(requests.RequestException, match="IP service"):
-            updater._get_public_ip()
+    with (
+        patch("requests.get", side_effect=requests.ConnectionError("timeout")),
+        pytest.raises(requests.RequestException, match="IP service"),
+    ):
+        updater._get_public_ip()
 
 
 # --- _update_duckdns ---------------------------------------------------------
@@ -88,25 +104,61 @@ def test_update_duckdns_success(updater):
 
 def test_update_duckdns_unexpected_response(updater):
     mock_resp = MagicMock(text="KO")
-    with patch("requests.get", return_value=mock_resp):
-        with pytest.raises(ValueError, match="unexpected response"):
-            updater._update_duckdns("1.2.3.4")
+    with (
+        patch("requests.get", return_value=mock_resp),
+        pytest.raises(ValueError, match="unexpected response"),
+    ):
+        updater._update_duckdns("1.2.3.4")
 
 
 def test_update_duckdns_http_error(updater):
     http_err = requests.HTTPError(response=MagicMock(status_code=403))
-    with patch("requests.get", side_effect=http_err):
-        with pytest.raises(requests.HTTPError, match="403"):
-            updater._update_duckdns("1.2.3.4")
+    with (
+        patch("requests.get", side_effect=http_err),
+        pytest.raises(requests.HTTPError, match="403"),
+    ):
+        updater._update_duckdns("1.2.3.4")
 
 
 def test_update_duckdns_no_token_in_error(updater):
     """HTTP errors must not leak the token into the message."""
     http_err = requests.HTTPError(response=MagicMock(status_code=403))
-    with patch("requests.get", side_effect=http_err):
-        with pytest.raises(requests.HTTPError) as exc_info:
-            updater._update_duckdns("1.2.3.4")
+    with (
+        patch("requests.get", side_effect=http_err),
+        pytest.raises(requests.HTTPError) as exc_info,
+    ):
+        updater._update_duckdns("1.2.3.4")
     assert "test-token" not in str(exc_info.value)
+
+
+def test_update_duckdns_no_token_in_connection_error(updater):
+    """Connection errors carry the request URL — token must not bleed through."""
+    conn_err = requests.ConnectionError(
+        "HTTPSConnectionPool(host='www.duckdns.org', port=443): "
+        "Max retries exceeded with url: /update?domains=test-domain"
+        "&token=test-token&ip=1.2.3.4"
+    )
+    with (
+        patch("requests.get", side_effect=conn_err),
+        pytest.raises(requests.RequestException) as exc_info,
+    ):
+        updater._update_duckdns("1.2.3.4")
+    assert "test-token" not in str(exc_info.value)
+
+
+def test_update_duckdns_passes_secrets_via_params(updater):
+    """Secrets must be passed via `params=`, not embedded in the URL string."""
+    mock_resp = MagicMock(text="OK")
+    with patch("requests.get", return_value=mock_resp) as mock_get:
+        updater._update_duckdns("1.2.3.4")
+    args, kwargs = mock_get.call_args
+    assert args == (updater.duckdns_update_url,)
+    assert kwargs["params"] == {
+        "domains": "test-domain",
+        "token": "test-token",
+        "ip": "1.2.3.4",
+    }
+    assert "test-token" not in args[0]
 
 
 # --- run ---------------------------------------------------------------------
@@ -134,7 +186,9 @@ def test_run_does_not_save_state_on_failed_update(updater):
     updater.last_ip = "1.2.3.4"
     ip_resp = MagicMock(text="9.9.9.9\n")
     dns_resp = MagicMock(text="KO")
-    with patch("requests.get", side_effect=[ip_resp, dns_resp]):
-        with pytest.raises(ValueError):
-            updater.run()
+    with (
+        patch("requests.get", side_effect=[ip_resp, dns_resp]),
+        pytest.raises(ValueError),
+    ):
+        updater.run()
     assert not updater.state_file.exists()
