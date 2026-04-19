@@ -20,14 +20,20 @@ It runs periodically and only calls the DuckDNS API when the public IP has actua
 ddns-update-monkey/
 ├── src/monkey/
 │   ├── __init__.py
-│   ├── __main__.py            # Entry point: python -m monkey
+│   ├── __main__.py            # Entry point: python -m monkey (composes collaborators)
 │   ├── config.py              # Config/secrets loader
 │   ├── dns_updater.py         # DnsUpdater Protocol
-│   └── duck_dns_updater.py    # DuckDnsUpdater (DuckDNS provider)
+│   ├── ip_resolver.py         # IpResolver — fetches the current public IP
+│   ├── state_store.py         # StateStore — persists the last known IP atomically
+│   ├── duck_dns_client.py     # DuckDnsClient — thin DuckDNS HTTP client
+│   └── duck_dns_updater.py    # DuckDnsUpdater — orchestrator
 ├── tests/
 │   ├── conftest.py
 │   ├── test_config.py
+│   ├── test_duck_dns_client.py
+│   ├── test_ip_resolver.py
 │   ├── test_main.py
+│   ├── test_state_store.py
 │   └── test_updater.py
 ├── .github/workflows/
 │   └── sonarcloud.yml        # SonarCloud static analysis CI workflow
