@@ -22,9 +22,25 @@ class StateStore:
             return ""
 
     def save(self, ip: str) -> None:
-        # Write to a temp file first, then atomically replace the real state file.
-        # os.replace() is POSIX-atomic: the old file is never left partially overwritten,
-        # so a crash or disk-full error between post and save can't corrupt state.json.
+        # Durable atomic write on a Pi that can lose power mid-run:
+        #   - fsync(tmp) so os.replace swaps in content that's on disk, not just
+        #     in the page cache.
+        #   - os.replace is metadata-atomic, so state.json is never torn.
+        #   - fsync(parent dir) so the rename itself survives a power cut —
+        #     otherwise the directory entry can come back empty.
         tmp = self.path.with_suffix(".tmp")
-        tmp.write_text(json.dumps({"last_ip": ip}))
-        os.replace(tmp, self.path)
+        payload = json.dumps({"last_ip": ip})
+        try:
+            with open(tmp, "w") as f:
+                f.write(payload)
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(tmp, self.path)
+            dir_fd = os.open(self.path.parent, os.O_DIRECTORY)
+            try:
+                os.fsync(dir_fd)
+            finally:
+                os.close(dir_fd)
+        except Exception:
+            tmp.unlink(missing_ok=True)
+            raise
