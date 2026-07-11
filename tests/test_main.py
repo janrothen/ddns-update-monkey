@@ -38,6 +38,8 @@ def test_main_success():
         RuntimeError("boom"),
         ValueError("bad value"),
         requests.RequestException("network"),
+        FileNotFoundError("config.toml"),  # missing config
+        KeyError("ip"),  # config.toml missing a section
     ],
 )
 def test_main_exits_on_known_failures(exc):

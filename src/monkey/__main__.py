@@ -1,8 +1,6 @@
 import logging
 import sys
 
-import requests
-
 from monkey.config import env, load_config
 from monkey.duck_dns_client import DuckDnsClient
 from monkey.duck_dns_updater import DuckDnsUpdater
@@ -35,7 +33,10 @@ def build_updater() -> DuckDnsUpdater:
 def main() -> None:
     try:
         build_updater().run()
-    except (RuntimeError, ValueError, requests.RequestException) as e:
+    except Exception as e:
+        # Last-resort guard for a cron-driven CLI: log the message only.
+        # A traceback would also print chained causes, which can carry the
+        # token-bearing request URL (see monkey._http).
         logging.error("%s", e)
         sys.exit(1)
 
