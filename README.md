@@ -70,10 +70,11 @@ Configuration is split across two files intentionally:
 
 ### Credentials (`.env`)
 
-Copy `.env.example` to `.env` and fill in your credentials:
+Copy `.env.example` to `.env`, restrict it to your user, and fill in your credentials:
 
 ```bash
 cp .env.example .env
+chmod 600 .env  # the token is a secret — keep it owner-readable only
 ```
 
 ```dotenv
@@ -136,6 +137,7 @@ python3 -m venv .venv
 ## Security
 
 - `.env` is listed in `.gitignore` and must never be committed — it contains your DuckDNS token
+- Keep `.env` owner-readable only (`chmod 600 .env`) so other local users can't read the token
 - The token grants full control over your DuckDNS domains; treat it like a password
 
 ## Contributing
