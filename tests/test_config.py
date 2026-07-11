@@ -66,6 +66,30 @@ def test_load_config_parses_toml(tmp_path, monkeypatch):
     assert cfg.state_file == tmp_path / "state.json"
 
 
+def test_load_config_rejects_non_https_url(tmp_path, monkeypatch):
+    """The token travels in the query string — plain HTTP must be refused."""
+    (tmp_path / "config.toml").write_text(
+        """
+        [ip]
+        service_url = "http://example/ip"
+        request_timeout = 7
+
+        [duckdns]
+        update_url = "https://example/update"
+        request_timeout = 11
+
+        [files]
+        state = "state.json"
+        """
+    )
+    monkeypatch.setattr(config_module, "project_root", lambda: tmp_path)
+    load_config.cache_clear()
+
+    with pytest.raises(RuntimeError, match="non-HTTPS"):
+        load_config()
+    load_config.cache_clear()
+
+
 def test_project_root_points_at_repo():
     """In a checkout, the anchor must resolve to the repo root, not the cwd."""
     config_module.project_root.cache_clear()

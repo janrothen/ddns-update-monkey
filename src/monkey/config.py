@@ -37,16 +37,24 @@ class Config:
     state_file: Path
 
 
+def _https_url(url: str) -> str:
+    # The DuckDNS request carries the token in its query string; over plain
+    # HTTP it would cross the wire in cleartext.
+    if not url.startswith("https://"):
+        raise RuntimeError(f"Refusing non-HTTPS URL in config.toml: {url}")
+    return url
+
+
 @lru_cache(maxsize=1)
 def load_config() -> Config:
     root = project_root()
     with open(root / "config.toml", "rb") as f:
         raw = tomllib.load(f)
     return Config(
-        ip_service_url=raw["ip"]["service_url"],
-        ip_request_timeout=raw["ip"]["request_timeout"],
-        duckdns_update_url=raw["duckdns"]["update_url"],
-        duckdns_request_timeout=raw["duckdns"]["request_timeout"],
+        ip_service_url=_https_url(raw["ip"]["service_url"]),
+        ip_request_timeout=int(raw["ip"]["request_timeout"]),
+        duckdns_update_url=_https_url(raw["duckdns"]["update_url"]),
+        duckdns_request_timeout=int(raw["duckdns"]["request_timeout"]),
         state_file=root / raw["files"]["state"],
     )
 
