@@ -17,6 +17,13 @@ def test_load_corrupt_json(state_store):
     assert state_store.load() == ""
 
 
+@pytest.mark.parametrize("payload", ["null", '["1.2.3.4"]', '"1.2.3.4"', "42"])
+def test_load_valid_json_but_not_a_dict(state_store, payload):
+    """Valid JSON of the wrong shape must be treated as empty, not crash."""
+    state_store.path.write_text(payload)
+    assert state_store.load() == ""
+
+
 def test_save_writes_correctly(state_store):
     state_store.save("1.2.3.4")
     assert json.loads(state_store.path.read_text()) == {"last_ip": "1.2.3.4"}

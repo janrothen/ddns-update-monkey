@@ -16,10 +16,13 @@ class StateStore:
         if not self.path.exists():
             return ""
         try:
-            return json.loads(self.path.read_text()).get("last_ip", "")
+            data = json.loads(self.path.read_text())
         except json.JSONDecodeError:
+            data = None
+        if not isinstance(data, dict):
             log.warning("%s is corrupt — treating as empty", self.path.name)
             return ""
+        return data.get("last_ip", "")
 
     def save(self, ip: str) -> None:
         # Durable atomic write on a Pi that can lose power mid-run:
