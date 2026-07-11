@@ -54,7 +54,7 @@ ddns-update-monkey/
 
 ## Configuration
 
-Copy `.env.example` to `.env` and fill in your values:
+Copy `.env.example` to `.env` (then `chmod 600 .env`) and fill in your values:
 ```env
 DUCKDNS_TOKEN=your-token-here
 DUCKDNS_DOMAIN=your-subdomain
@@ -86,3 +86,4 @@ Logs go to `/var/log/ddns-update-monkey-cron.log`.
 
 - The DuckDNS token grants full control over your domains; treat it like a password
 - `.env` is excluded from Git via `.gitignore` — never commit it
+- Keep `.env` owner-readable only (`chmod 600 .env`)
