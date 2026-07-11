@@ -3,9 +3,9 @@
 # Owner:       root:root, Permissions: 644 (readable by root & cron daemon)
 
 PATH=/usr/sbin:/usr/bin:/sbin:/bin
-HOME=/home/pi/raspberry/ddns-update-monkey
+APP_DIR=/home/pi/raspberry/ddns-update-monkey
 LOG=/var/log/ddns-update-monkey-cron.log
 TZ=Europe/Zurich
 
 # --- DDNS update (every 5 minutes) ----------------------------------------
-*/5 * * * *  pi  cd $HOME && .venv/bin/python -m monkey >> $LOG 2>&1
+*/5 * * * *  pi  cd $APP_DIR && .venv/bin/python -m monkey >> $LOG 2>&1

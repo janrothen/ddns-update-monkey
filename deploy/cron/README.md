@@ -6,7 +6,7 @@ The project includes a cron file (`ddns-update-monkey`) that runs the DDNS updat
 
 ### 1. Set the repo path
 
-Update the `HOME` variable at the top of `bitcoin-node-watchdog` to match where you cloned the repo.
+Update the `APP_DIR` variable at the top of `ddns-update-monkey` to match where you cloned the repo.
 
 ### 2. Copy the scheduling file
 ```bash
