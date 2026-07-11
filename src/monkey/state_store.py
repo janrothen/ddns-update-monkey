@@ -16,7 +16,7 @@ class StateStore:
         if not self.path.exists():
             return ""
         try:
-            data = json.loads(self.path.read_text())
+            data = json.loads(self.path.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
             data = None
         if not isinstance(data, dict):
@@ -34,7 +34,7 @@ class StateStore:
         tmp = self.path.with_suffix(".tmp")
         payload = json.dumps({"last_ip": ip})
         try:
-            with open(tmp, "w") as f:
+            with open(tmp, "w", encoding="utf-8") as f:
                 f.write(payload)
                 f.flush()
                 os.fsync(f.fileno())
