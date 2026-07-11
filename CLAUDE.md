@@ -64,12 +64,15 @@ The token is found at the top of the DuckDNS dashboard after logging in.
 The domain is just the subdomain part, without `.duckdns.org`.
 
 Non-secret settings (IP service URL, timeouts, file paths) live in `config.toml`.
+URLs must be `https://` — the DuckDNS token travels in the query string, so plain HTTP is refused at startup.
+
+`config.toml` and `.env` are found via the repo root in a checkout (editable install); under a regular install they are resolved from the current working directory, so run the tool from the project directory.
 
 ## Run
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install .
-.venv/bin/python -m monkey
+.venv/bin/python -m monkey   # run from the project directory (see Configuration)
 ```
 
 ## Test
