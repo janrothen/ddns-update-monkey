@@ -28,7 +28,7 @@ def test_env_loads_dotenv_once(monkeypatch):
     env("SOME_KEY")
 
     assert len(calls) == 1
-    assert calls[0] == config_module.PROJECT_ROOT / ".env"
+    assert calls[0] == config_module.project_root() / ".env"
 
 
 def test_load_config_parses_toml(tmp_path, monkeypatch):
@@ -46,7 +46,7 @@ def test_load_config_parses_toml(tmp_path, monkeypatch):
         state = "state.json"
         """
     )
-    monkeypatch.setattr(config_module, "PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(config_module, "project_root", lambda: tmp_path)
     load_config.cache_clear()
 
     cfg = load_config()
@@ -60,8 +60,31 @@ def test_load_config_parses_toml(tmp_path, monkeypatch):
 
 
 def test_project_root_points_at_repo():
-    """The anchor must resolve to the repo root, not the cwd."""
-    assert (config_module.PROJECT_ROOT / "pyproject.toml").is_file()
-    assert Path(config_module.__file__).resolve() == (
-        config_module.PROJECT_ROOT / "src" / "monkey" / "config.py"
-    )
+    """In a checkout, the anchor must resolve to the repo root, not the cwd."""
+    config_module.project_root.cache_clear()
+    try:
+        root = config_module.project_root()
+        assert (root / "pyproject.toml").is_file()
+        assert Path(config_module.__file__).resolve() == (
+            root / "src" / "monkey" / "config.py"
+        )
+    finally:
+        config_module.project_root.cache_clear()
+
+
+def test_project_root_falls_back_to_cwd(monkeypatch, tmp_path):
+    """Under a regular install there is no config.toml next to the source —
+    the root must fall back to the working directory the tool is run from."""
+    fake_file = tmp_path / "venv" / "site-packages" / "monkey" / "config.py"
+    fake_file.parent.mkdir(parents=True)
+    fake_file.touch()
+    app_dir = tmp_path / "app"
+    app_dir.mkdir()
+
+    monkeypatch.setattr(config_module, "__file__", str(fake_file))
+    monkeypatch.chdir(app_dir)
+    config_module.project_root.cache_clear()
+    try:
+        assert config_module.project_root() == app_dir
+    finally:
+        config_module.project_root.cache_clear()
