@@ -23,7 +23,7 @@ class DuckDnsClient:
         # embed the full request URL, token included.
         params = {"domains": self.domain, "token": self.token, "ip": ip}
         resp = _http.get(self.update_url, "DuckDNS", self.timeout, params=params)
-        if resp.text.strip() != "OK":
-            raise ValueError(
-                f"DuckDNS returned unexpected response: {resp.text.strip()!r}"
-            )
+        body = resp.text.strip()
+        if body != "OK":
+            # Truncate: an upstream error page could be kilobytes of HTML.
+            raise ValueError(f"DuckDNS returned unexpected response: {body[:100]!r}")
