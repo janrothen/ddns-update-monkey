@@ -59,6 +59,9 @@ def _load_dotenv_once() -> None:
 def env(key: str) -> str:
     _load_dotenv_once()
     value = os.environ.get(key)
-    if value is None:
+    if not value:
+        # An empty value (e.g. a bare `DUCKDNS_TOKEN=` line in .env) is as
+        # useless as a missing one — fail here with a clear message instead
+        # of at the API.
         raise RuntimeError(f"Missing required environment variable: {key}")
     return value
