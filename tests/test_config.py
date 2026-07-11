@@ -17,6 +17,13 @@ def test_env_raises_when_missing(monkeypatch):
         env("SOME_KEY")
 
 
+def test_env_raises_when_empty(monkeypatch):
+    """A bare `KEY=` line in .env must not pass validation."""
+    monkeypatch.setenv("SOME_KEY", "")
+    with pytest.raises(RuntimeError, match="SOME_KEY"):
+        env("SOME_KEY")
+
+
 def test_env_loads_dotenv_once(monkeypatch):
     """`load_dotenv` must be invoked on first env() call, and only once."""
     calls = []
