@@ -1,9 +1,10 @@
 """Internal HTTP helper.
 
 Wraps `requests.get` with uniform exception handling. The caught exception
-is never interpolated into the re-raised message — `requests` embeds the
-full request URL (including query-string secrets like the DuckDNS token)
-in connection-level errors, and interpolation would leak it into logs.
+is never interpolated into the re-raised message, and the chain is severed
+with `from None` — `requests` embeds the full request URL (including
+query-string secrets like the DuckDNS token) in its error messages, and a
+chained __cause__/__context__ would resurface it in any printed traceback.
 """
 
 from __future__ import annotations
@@ -23,7 +24,7 @@ def get(
     except requests.HTTPError as e:
         raise requests.HTTPError(
             f"{service_name} returned HTTP {e.response.status_code}"
-        ) from e
-    except requests.RequestException as e:
-        raise requests.RequestException(f"Failed to reach {service_name}") from e
+        ) from None
+    except requests.RequestException:
+        raise requests.RequestException(f"Failed to reach {service_name}") from None
     return resp

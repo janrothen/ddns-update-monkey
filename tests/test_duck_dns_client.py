@@ -29,18 +29,25 @@ def test_update_http_error(duck_dns_client):
 
 
 def test_update_no_token_in_error(duck_dns_client):
-    """HTTP errors must not leak the token into the message."""
-    http_err = requests.HTTPError(response=MagicMock(status_code=403))
+    """HTTP errors must not leak the token into the message or the chain."""
+    http_err = requests.HTTPError(
+        "403 Client Error: Forbidden for url: https://www.duckdns.org/update"
+        "?domains=test-domain&token=test-token&ip=1.2.3.4",
+        response=MagicMock(status_code=403),
+    )
     with (
         patch("requests.get", side_effect=http_err),
         pytest.raises(requests.HTTPError) as exc_info,
     ):
         duck_dns_client.update("1.2.3.4")
     assert "test-token" not in str(exc_info.value)
+    assert exc_info.value.__cause__ is None
+    assert exc_info.value.__suppress_context__
 
 
 def test_update_no_token_in_connection_error(duck_dns_client):
-    """Connection errors carry the request URL — token must not bleed through."""
+    """Connection errors carry the request URL — token must not bleed through,
+    not even via the exception chain printed in tracebacks."""
     conn_err = requests.ConnectionError(
         "HTTPSConnectionPool(host='www.duckdns.org', port=443): "
         "Max retries exceeded with url: /update?domains=test-domain"
@@ -52,6 +59,8 @@ def test_update_no_token_in_connection_error(duck_dns_client):
     ):
         duck_dns_client.update("1.2.3.4")
     assert "test-token" not in str(exc_info.value)
+    assert exc_info.value.__cause__ is None
+    assert exc_info.value.__suppress_context__
 
 
 def test_update_passes_secrets_via_params(duck_dns_client):
