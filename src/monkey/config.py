@@ -12,9 +12,20 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-# Anchor the project root to this file's location rather than `Path.cwd()`,
-# so invocations from any directory still resolve config.toml and .env.
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
+@lru_cache(maxsize=1)
+def project_root() -> Path:
+    """Directory that holds config.toml and .env.
+
+    In a checkout (editable install) the repo root is anchored to this file's
+    location, so invocations from any directory work. Under a regular install
+    this file lives in site-packages with no config.toml nearby — fall back to
+    the current working directory, which is where the cron job runs the tool.
+    """
+    anchored = Path(__file__).resolve().parents[2]
+    if (anchored / "config.toml").is_file():
+        return anchored
+    return Path.cwd()
 
 
 @dataclass(frozen=True)
@@ -28,20 +39,21 @@ class Config:
 
 @lru_cache(maxsize=1)
 def load_config() -> Config:
-    with open(PROJECT_ROOT / "config.toml", "rb") as f:
+    root = project_root()
+    with open(root / "config.toml", "rb") as f:
         raw = tomllib.load(f)
     return Config(
         ip_service_url=raw["ip"]["service_url"],
         ip_request_timeout=raw["ip"]["request_timeout"],
         duckdns_update_url=raw["duckdns"]["update_url"],
         duckdns_request_timeout=raw["duckdns"]["request_timeout"],
-        state_file=PROJECT_ROOT / raw["files"]["state"],
+        state_file=root / raw["files"]["state"],
     )
 
 
 @lru_cache(maxsize=1)
 def _load_dotenv_once() -> None:
-    load_dotenv(PROJECT_ROOT / ".env")
+    load_dotenv(project_root() / ".env")
 
 
 def env(key: str) -> str:
