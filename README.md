@@ -107,6 +107,8 @@ python3 -m venv .venv
 .venv/bin/python -m monkey
 ```
 
+Run the tool from the project directory: in a checkout `config.toml` and `.env` are found via the repo root, but under a regular (non-editable) install they are resolved from the current working directory. The cron drop-in handles this with a `cd` before invoking the module.
+
 ## Development
 
 ```bash
@@ -124,7 +126,9 @@ python3 -m venv .venv
 
 | Symptom | Likely cause |
 |---|---|
-| `Missing required environment variable: DUCKDNS_TOKEN` | `.env` is missing or the variable name is wrong |
+| `Missing required environment variable: DUCKDNS_TOKEN` | `.env` is missing, the variable name is wrong, or the value is empty |
+| `No such file or directory: ... config.toml` | Not running from the project directory — `cd` into it first (see Install & run) |
+| `Refusing non-HTTPS URL in config.toml` | A `service_url`/`update_url` was changed to plain `http://` — the token must only travel over HTTPS |
 | `IP service returned HTTP 4xx/5xx` | `ipv4.icanhazip.com` is temporarily unavailable — will retry on next cron tick |
 | `DuckDNS returned HTTP 4xx` | Token is invalid or expired — check the DuckDNS dashboard |
 | `DuckDNS returned unexpected response` | DuckDNS API returned something other than `OK` — check the domain name |
