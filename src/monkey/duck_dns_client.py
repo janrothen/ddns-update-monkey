@@ -17,8 +17,10 @@ class DuckDnsClient:
         self.timeout = timeout
 
     def update(self, ip: str) -> None:
-        # Secrets go via `params=`, never into the URL string, so they don't
-        # surface in `requests` exception messages or server access logs.
+        # The token travels as a query parameter either way — that's DuckDNS's
+        # API design, and their servers see it regardless. What we control is
+        # local leakage: _http scrubs exception messages, which would otherwise
+        # embed the full request URL, token included.
         params = {"domains": self.domain, "token": self.token, "ip": ip}
         resp = _http.get(self.update_url, "DuckDNS", self.timeout, params=params)
         if resp.text.strip() != "OK":
