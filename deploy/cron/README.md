@@ -24,7 +24,9 @@ The cron job runs as user `pi` which cannot create files in `/var/log/` by defau
 ```bash
 sudo touch /var/log/ddns-update-monkey-cron.log
 sudo chown pi:pi /var/log/ddns-update-monkey-cron.log
+sudo chmod 640 /var/log/ddns-update-monkey-cron.log
 ```
+The log records your public IP and DuckDNS domain, so keep it unreadable by other local users.
 
 ### 5. Verify cron picked it up
 ```bash

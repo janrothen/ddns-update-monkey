@@ -132,6 +132,7 @@ python3 -m venv .venv
 | `IP service returned HTTP 4xx/5xx` | `ipv4.icanhazip.com` is temporarily unavailable — will retry on next cron tick |
 | `DuckDNS returned HTTP 4xx` | Token is invalid or expired — check the DuckDNS dashboard |
 | `DuckDNS returned unexpected response` | DuckDNS API returned something other than `OK` — check the domain name |
+| `ResolutionImpossible` / `No matching distribution found for urllib3>=2.8.0` | The venv's pip or index is too old — run `.venv/bin/pip install --upgrade pip` and retry |
 | `state.json is corrupt` | State file was partially written — it is reset automatically |
 
 ## State file
@@ -143,6 +144,7 @@ python3 -m venv .venv
 - `.env` is listed in `.gitignore` and must never be committed — it contains your DuckDNS token
 - Keep `.env` owner-readable only (`chmod 600 .env`) so other local users can't read the token
 - The token grants full control over your DuckDNS domains; treat it like a password
+- Dependency floors in `pyproject.toml` exclude versions with known advisories; after pulling, re-run `.venv/bin/pip install .` so an existing venv picks them up
 
 ## Contributing
 

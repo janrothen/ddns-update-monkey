@@ -9,7 +9,11 @@ description = "Lightweight DDNS updater that keeps your DuckDNS hostname pointed
 requires-python = ">=3.13"
 dependencies = [
     "requests~=2.33",
-    "python-dotenv~=1.2",
+    "python-dotenv~=1.2,>=1.2.2",  # CVE-2026-28684 (GHSA-mf9w-mj56-hr94)
+    # Transitive via requests; floor set directly because requests' own
+    # range (urllib3>=1.26) still admits versions where its normal body read
+    # hits GHSA-vxq7-64xx-v4gw / GHSA-gh4c-6fx4-qh6g (fixed in 2.8.0).
+    "urllib3>=2.8.0,<3",
 ]
 
 [project.optional-dependencies]
