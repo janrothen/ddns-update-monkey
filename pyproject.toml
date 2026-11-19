@@ -14,6 +14,15 @@ dependencies = [
     # range (urllib3>=1.26) still admits versions where its normal body read
     # hits GHSA-vxq7-64xx-v4gw / GHSA-gh4c-6fx4-qh6g (fixed in 2.8.0).
     "urllib3>=2.8.0,<3",
+    # Transitive via requests. requests verifies TLS against certifi's bundle;
+    # before 2026.10.18 it trusts emSign roots with compromised intermediates
+    # (GHSA-6q48-6c7w-9gw2) — an on-path attacker could intercept the token.
+    # 2026.10.19 is the advisory's recommended release (unaffected roots kept).
+    "certifi>=2026.10.19",
+    # Transitive via requests. GHSA-65pc-fj4g-8rjx (CVE-2026-45409) is a DoS in
+    # idna.encode() on crafted non-ASCII hostnames; ours come from config.toml,
+    # so this is defense in depth.
+    "idna>=3.15,<4",
 ]
 
 [project.optional-dependencies]
